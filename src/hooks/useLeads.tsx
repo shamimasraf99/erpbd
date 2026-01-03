@@ -1,5 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useEffect } from "react";
 
 export interface Lead {
   id: string;
@@ -15,6 +16,21 @@ export interface Lead {
 }
 
 export function useLeads() {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('leads-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => {
+        queryClient.invalidateQueries({ queryKey: ["leads"] });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   return useQuery({
     queryKey: ["leads"],
     queryFn: async () => {
@@ -30,6 +46,21 @@ export function useLeads() {
 }
 
 export function useLeadsByStage() {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('leads-stage-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => {
+        queryClient.invalidateQueries({ queryKey: ["leads-by-stage"] });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   return useQuery({
     queryKey: ["leads-by-stage"],
     queryFn: async () => {

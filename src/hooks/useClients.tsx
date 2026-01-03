@@ -1,5 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useEffect } from "react";
 
 export interface Client {
   id: string;
@@ -13,6 +14,21 @@ export interface Client {
 }
 
 export function useClients() {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('clients-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'clients' }, () => {
+        queryClient.invalidateQueries({ queryKey: ["clients"] });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   return useQuery({
     queryKey: ["clients"],
     queryFn: async () => {
@@ -28,6 +44,21 @@ export function useClients() {
 }
 
 export function useClientCount() {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('clients-count-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'clients' }, () => {
+        queryClient.invalidateQueries({ queryKey: ["clients-count"] });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   return useQuery({
     queryKey: ["clients-count"],
     queryFn: async () => {
