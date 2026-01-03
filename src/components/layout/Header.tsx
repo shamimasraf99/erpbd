@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Bell,
   Search,
@@ -22,6 +23,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 interface HeaderProps {
   isDarkMode: boolean;
@@ -31,6 +34,9 @@ interface HeaderProps {
 
 export function Header({ isDarkMode, toggleDarkMode, toggleSidebar }: HeaderProps) {
   const [searchFocused, setSearchFocused] = useState(false);
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   const notifications = [
     { id: 1, title: "নতুন লিড যোগ হয়েছে", time: "৫ মিনিট আগে", unread: true },
@@ -38,6 +44,18 @@ export function Header({ isDarkMode, toggleDarkMode, toggleSidebar }: HeaderProp
     { id: 3, title: "প্রজেক্ট মিটিং আজ ৩টায়", time: "২ ঘন্টা আগে", unread: false },
     { id: 4, title: "নতুন টাস্ক অ্যাসাইন হয়েছে", time: "৩ ঘন্টা আগে", unread: false },
   ];
+
+  const handleLogout = async () => {
+    await signOut();
+    toast({
+      title: "লগ আউট সফল",
+      description: "আপনি সফলভাবে লগ আউট করেছেন",
+    });
+    navigate("/auth");
+  };
+
+  const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "ইউজার";
+  const initials = displayName.charAt(0).toUpperCase();
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 lg:px-6">
@@ -132,11 +150,11 @@ export function Header({ isDarkMode, toggleDarkMode, toggleSidebar }: HeaderProp
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center gap-2 pl-2">
               <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                <span className="text-sm font-medium text-primary">আ</span>
+                <span className="text-sm font-medium text-primary">{initials}</span>
               </div>
               <div className="hidden md:block text-left">
-                <p className="text-sm font-medium">আহমেদ করিম</p>
-                <p className="text-xs text-muted-foreground">অ্যাডমিন</p>
+                <p className="text-sm font-medium">{displayName}</p>
+                <p className="text-xs text-muted-foreground">{user?.email}</p>
               </div>
             </Button>
           </DropdownMenuTrigger>
@@ -152,7 +170,7 @@ export function Header({ isDarkMode, toggleDarkMode, toggleSidebar }: HeaderProp
               সেটিংস
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive">
+            <DropdownMenuItem className="text-destructive" onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />
               লগ আউট
             </DropdownMenuItem>
