@@ -386,6 +386,95 @@ export type Database = {
           },
         ]
       }
+      meeting_participants: {
+        Row: {
+          employee_id: string
+          id: string
+          meeting_id: string
+          status: string | null
+        }
+        Insert: {
+          employee_id: string
+          id?: string
+          meeting_id: string
+          status?: string | null
+        }
+        Update: {
+          employee_id?: string
+          id?: string
+          meeting_id?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_participants_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_participants_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meetings: {
+        Row: {
+          created_at: string
+          description: string | null
+          duration_minutes: number | null
+          end_time: string | null
+          id: string
+          location: string | null
+          meeting_link: string | null
+          meeting_type: string | null
+          organizer_id: string | null
+          start_time: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number | null
+          end_time?: string | null
+          id?: string
+          location?: string | null
+          meeting_link?: string | null
+          meeting_type?: string | null
+          organizer_id?: string | null
+          start_time: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number | null
+          end_time?: string | null
+          id?: string
+          location?: string | null
+          meeting_link?: string | null
+          meeting_type?: string | null
+          organizer_id?: string | null
+          start_time?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meetings_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount: number
