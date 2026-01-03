@@ -1,7 +1,26 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useEffect } from "react";
 
 export function useDashboardStats() {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const tables = ['clients', 'employees', 'invoices', 'projects'];
+    const channels = tables.map(table => 
+      supabase
+        .channel(`dashboard-${table}-changes`)
+        .on('postgres_changes', { event: '*', schema: 'public', table }, () => {
+          queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+        })
+        .subscribe()
+    );
+
+    return () => {
+      channels.forEach(channel => supabase.removeChannel(channel));
+    };
+  }, [queryClient]);
+
   return useQuery({
     queryKey: ["dashboard-stats"],
     queryFn: async () => {
@@ -30,6 +49,21 @@ export function useDashboardStats() {
 }
 
 export function useLeadsPipelineData() {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('leads-pipeline-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => {
+        queryClient.invalidateQueries({ queryKey: ["leads-pipeline"] });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   return useQuery({
     queryKey: ["leads-pipeline"],
     queryFn: async () => {

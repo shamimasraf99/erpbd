@@ -1,5 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useEffect } from "react";
 
 export interface Employee {
   id: string;
@@ -15,6 +16,21 @@ export interface Employee {
 }
 
 export function useEmployees() {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('employees-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'employees' }, () => {
+        queryClient.invalidateQueries({ queryKey: ["employees"] });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   return useQuery({
     queryKey: ["employees"],
     queryFn: async () => {
@@ -51,6 +67,21 @@ export function useEmployees() {
 }
 
 export function useEmployeeCount() {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('employees-count-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'employees' }, () => {
+        queryClient.invalidateQueries({ queryKey: ["employees-count"] });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   return useQuery({
     queryKey: ["employees-count"],
     queryFn: async () => {
