@@ -1,56 +1,69 @@
 import { useState } from "react";
-import { Plus, Search, Filter, LayoutGrid, List, MoreHorizontal, Phone, Mail, Building2 } from "lucide-react";
+import { Plus, Search, Filter, LayoutGrid, List, MoreHorizontal, Phone, Mail, Building2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useLeads } from "@/hooks/useLeads";
 
-interface Lead {
-  id: number;
-  name: string;
-  company: string;
-  email: string;
-  phone: string;
-  value: string;
-  source: string;
-  stage: "নতুন" | "যোগাযোগ" | "প্রস্তাব" | "আলোচনা" | "সম্পন্ন";
-  createdAt: string;
+const stages = ["new", "contacted", "proposal", "negotiation", "won"] as const;
+
+const stageLabels: Record<string, string> = {
+  "new": "নতুন",
+  "contacted": "যোগাযোগ",
+  "proposal": "প্রস্তাব",
+  "negotiation": "আলোচনা",
+  "won": "সম্পন্ন",
+};
+
+const stageColors: Record<string, string> = {
+  "new": "bg-primary/10 text-primary border-primary/30",
+  "contacted": "bg-info/10 text-info border-info/30",
+  "proposal": "bg-warning/10 text-warning border-warning/30",
+  "negotiation": "bg-accent/10 text-accent border-accent/30",
+  "won": "bg-success/10 text-success border-success/30",
+};
+
+const stageHeaderColors: Record<string, string> = {
+  "new": "border-t-primary",
+  "contacted": "border-t-info",
+  "proposal": "border-t-warning",
+  "negotiation": "border-t-accent",
+  "won": "border-t-success",
+};
+
+function formatCurrency(value: number | null) {
+  if (!value) return "৳০";
+  return `৳${value.toLocaleString('bn-BD')}`;
 }
 
-const leads: Lead[] = [
-  { id: 1, name: "রাফিউল ইসলাম", company: "টেক ইনোভেশন", email: "rafiul@tech.com", phone: "০১৭১২৩৪৫৬৭৮", value: "৳৩,০০,০০০", source: "ওয়েবসাইট", stage: "নতুন", createdAt: "১০ জানু" },
-  { id: 2, name: "সাবরিনা আক্তার", company: "গ্রিন সলিউশন্স", email: "sabrina@green.com", phone: "০১৮১২৩৪৫৬৭৮", value: "৳৫,৫০,০০০", source: "রেফারেল", stage: "যোগাযোগ", createdAt: "০৮ জানু" },
-  { id: 3, name: "মাহমুদ হাসান", company: "ডিজিটাল মার্ট", email: "mahmud@digital.com", phone: "০১৯১২৩৪৫৬৭৮", value: "৳২,২৫,০০০", source: "সোশ্যাল মিডিয়া", stage: "প্রস্তাব", createdAt: "০৫ জানু" },
-  { id: 4, name: "নাজমুল করিম", company: "স্মার্ট সার্ভিস", email: "nazmul@smart.com", phone: "০১৬১২৩৪৫৬৭৮", value: "৳৪,০০,০০০", source: "ইভেন্ট", stage: "আলোচনা", createdAt: "০১ জানু" },
-  { id: 5, name: "তানভীর আহমেদ", company: "ফাস্ট ট্রেড", email: "tanvir@fast.com", phone: "০১৫১২৩৪৫৬৭৮", value: "৳১,৭৫,০০০", source: "কোল্ড কল", stage: "নতুন", createdAt: "০৯ জানু" },
-  { id: 6, name: "ফারহানা রহমান", company: "ব্লু স্কাই", email: "farhana@blue.com", phone: "০১৪১২৩৪৫৬৭৮", value: "৳৬,০০,০০০", source: "ওয়েবসাইট", stage: "সম্পন্ন", createdAt: "২৮ ডিসে" },
-];
-
-const stages = ["নতুন", "যোগাযোগ", "প্রস্তাব", "আলোচনা", "সম্পন্ন"] as const;
-
-const stageColors = {
-  "নতুন": "bg-primary/10 text-primary border-primary/30",
-  "যোগাযোগ": "bg-info/10 text-info border-info/30",
-  "প্রস্তাব": "bg-warning/10 text-warning border-warning/30",
-  "আলোচনা": "bg-accent/10 text-accent border-accent/30",
-  "সম্পন্ন": "bg-success/10 text-success border-success/30",
-};
-
-const stageHeaderColors = {
-  "নতুন": "border-t-primary",
-  "যোগাযোগ": "border-t-info",
-  "প্রস্তাব": "border-t-warning",
-  "আলোচনা": "border-t-accent",
-  "সম্পন্ন": "border-t-success",
-};
+function formatDate(dateStr: string) {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('bn-BD', { day: 'numeric', month: 'short' });
+}
 
 export default function CRMLeads() {
   const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
   const [searchQuery, setSearchQuery] = useState("");
+  const { data: leads = [], isLoading, error } = useLeads();
 
   const getLeadsByStage = (stage: typeof stages[number]) => {
-    return leads.filter((lead) => lead.stage === stage);
+    return leads.filter((lead) => (lead.stage || 'new') === stage);
   };
+
+  const filteredLeads = leads.filter(
+    (lead) =>
+      lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (lead.company?.toLowerCase() || '').includes(searchQuery.toLowerCase())
+  );
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-destructive">ডেটা লোড করতে সমস্যা হয়েছে</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -103,15 +116,33 @@ export default function CRMLeads() {
         </div>
       </div>
 
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!isLoading && leads.length === 0 && (
+        <div className="flex flex-col items-center justify-center h-64 text-center">
+          <p className="text-muted-foreground mb-2">কোনো লিড পাওয়া যায়নি</p>
+          <Button className="btn-gradient gap-2">
+            <Plus className="h-4 w-4" />
+            প্রথম লিড যোগ করুন
+          </Button>
+        </div>
+      )}
+
       {/* Kanban View */}
-      {viewMode === "kanban" && (
+      {!isLoading && viewMode === "kanban" && leads.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 overflow-x-auto pb-4">
           {stages.map((stage) => (
             <div key={stage} className="min-w-[280px]">
               <div className={cn("kanban-column border-t-4", stageHeaderColors[stage])}>
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    <h3 className="font-semibold">{stage}</h3>
+                    <h3 className="font-semibold">{stageLabels[stage]}</h3>
                     <Badge variant="secondary" className="text-xs">
                       {getLeadsByStage(stage).length}
                     </Badge>
@@ -127,10 +158,12 @@ export default function CRMLeads() {
                       <div className="flex items-start justify-between mb-3">
                         <div>
                           <h4 className="font-medium">{lead.name}</h4>
-                          <p className="text-sm text-muted-foreground flex items-center gap-1">
-                            <Building2 className="h-3 w-3" />
-                            {lead.company}
-                          </p>
+                          {lead.company && (
+                            <p className="text-sm text-muted-foreground flex items-center gap-1">
+                              <Building2 className="h-3 w-3" />
+                              {lead.company}
+                            </p>
+                          )}
                         </div>
                         <Button variant="ghost" size="icon" className="h-6 w-6">
                           <MoreHorizontal className="h-4 w-4" />
@@ -138,23 +171,29 @@ export default function CRMLeads() {
                       </div>
 
                       <div className="space-y-2 mb-3">
-                        <p className="text-sm flex items-center gap-2 text-muted-foreground">
-                          <Mail className="h-3 w-3" />
-                          {lead.email}
-                        </p>
-                        <p className="text-sm flex items-center gap-2 text-muted-foreground">
-                          <Phone className="h-3 w-3" />
-                          {lead.phone}
-                        </p>
+                        {lead.email && (
+                          <p className="text-sm flex items-center gap-2 text-muted-foreground">
+                            <Mail className="h-3 w-3" />
+                            {lead.email}
+                          </p>
+                        )}
+                        {lead.phone && (
+                          <p className="text-sm flex items-center gap-2 text-muted-foreground">
+                            <Phone className="h-3 w-3" />
+                            {lead.phone}
+                          </p>
+                        )}
                       </div>
 
                       <div className="flex items-center justify-between pt-3 border-t border-border">
                         <span className="text-sm font-semibold text-success">
-                          {lead.value}
+                          {formatCurrency(lead.estimated_value)}
                         </span>
-                        <Badge variant="outline" className="text-xs">
-                          {lead.source}
-                        </Badge>
+                        {lead.source && (
+                          <Badge variant="outline" className="text-xs">
+                            {lead.source}
+                          </Badge>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -166,7 +205,7 @@ export default function CRMLeads() {
       )}
 
       {/* List View */}
-      {viewMode === "list" && (
+      {!isLoading && viewMode === "list" && leads.length > 0 && (
         <div className="table-container">
           <table className="w-full">
             <thead>
@@ -182,21 +221,21 @@ export default function CRMLeads() {
               </tr>
             </thead>
             <tbody>
-              {leads.map((lead) => (
+              {filteredLeads.map((lead) => (
                 <tr key={lead.id} className="border-b border-border hover:bg-muted/30 transition-colors">
                   <td className="p-4 font-medium">{lead.name}</td>
-                  <td className="p-4 text-muted-foreground">{lead.company}</td>
-                  <td className="p-4 text-muted-foreground">{lead.email}</td>
-                  <td className="p-4 font-medium text-success">{lead.value}</td>
+                  <td className="p-4 text-muted-foreground">{lead.company || '-'}</td>
+                  <td className="p-4 text-muted-foreground">{lead.email || '-'}</td>
+                  <td className="p-4 font-medium text-success">{formatCurrency(lead.estimated_value)}</td>
                   <td className="p-4">
-                    <Badge variant="secondary">{lead.source}</Badge>
+                    {lead.source && <Badge variant="secondary">{lead.source}</Badge>}
                   </td>
                   <td className="p-4">
-                    <Badge variant="outline" className={stageColors[lead.stage]}>
-                      {lead.stage}
+                    <Badge variant="outline" className={stageColors[lead.stage || 'new']}>
+                      {stageLabels[lead.stage || 'new']}
                     </Badge>
                   </td>
-                  <td className="p-4 text-muted-foreground">{lead.createdAt}</td>
+                  <td className="p-4 text-muted-foreground">{formatDate(lead.created_at)}</td>
                   <td className="p-4 text-right">
                     <Button variant="ghost" size="icon">
                       <MoreHorizontal className="h-4 w-4" />

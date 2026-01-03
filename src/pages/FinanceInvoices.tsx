@@ -1,46 +1,69 @@
 import { useState } from "react";
-import { Plus, Search, Filter, MoreHorizontal, Download, Send, Eye, Printer } from "lucide-react";
+import { Plus, Search, Filter, MoreHorizontal, Download, Send, Eye, Printer, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useInvoices, useInvoiceStats } from "@/hooks/useInvoices";
 
-interface Invoice {
-  id: string;
-  client: string;
-  project: string;
-  amount: string;
-  date: string;
-  dueDate: string;
-  status: "পেইড" | "পেন্ডিং" | "ওভারডিউ" | "ড্রাফট";
+const statusColors: Record<string, string> = {
+  "paid": "bg-success/10 text-success border-success/30",
+  "pending": "bg-warning/10 text-warning border-warning/30",
+  "overdue": "bg-destructive/10 text-destructive border-destructive/30",
+  "draft": "bg-muted text-muted-foreground border-border",
+};
+
+const statusLabels: Record<string, string> = {
+  "paid": "পেইড",
+  "pending": "পেন্ডিং",
+  "overdue": "ওভারডিউ",
+  "draft": "ড্রাফট",
+};
+
+function formatCurrency(value: number) {
+  if (value >= 100000) {
+    return `৳${(value / 100000).toFixed(2)} লাখ`;
+  }
+  return `৳${value.toLocaleString('bn-BD')}`;
 }
 
-const invoices: Invoice[] = [
-  { id: "INV-2025-001", client: "টেক সলিউশন্স", project: "ই-কমার্স ওয়েবসাইট", amount: "৳১,৫০,০০০", date: "০১ জানু ২০২৫", dueDate: "১৫ জানু ২০২৫", status: "পেন্ডিং" },
-  { id: "INV-2025-002", client: "গ্রিন এনার্জি", project: "মোবাইল অ্যাপ", amount: "৳২,২৫,০০০", date: "২৮ ডিসে ২০২৪", dueDate: "১২ জানু ২০২৫", status: "পেইড" },
-  { id: "INV-2024-098", client: "ব্লু স্কাই কর্প", project: "ERP সিস্টেম", amount: "৳৩,৫০,০০০", date: "১৫ ডিসে ২০২৪", dueDate: "৩০ ডিসে ২০২৪", status: "ওভারডিউ" },
-  { id: "INV-2025-003", client: "ডিজিটাল ফার্স্ট", project: "ক্লাউড মাইগ্রেশন", amount: "৳৮৫,০০০", date: "০৫ জানু ২০২৫", dueDate: "২০ জানু ২০২৫", status: "ড্রাফট" },
-  { id: "INV-2024-097", client: "ফাইন্যান্স প্রো", project: "ডাটা অ্যানালিটিক্স", amount: "৳১,৮০,০০০", date: "১০ ডিসে ২০২৪", dueDate: "২৫ ডিসে ২০২৪", status: "পেইড" },
-  { id: "INV-2024-096", client: "স্মার্ট হোম", project: "IoT ইন্টিগ্রেশন", amount: "৳৯৫,০০০", date: "০১ ডিসে ২০২৪", dueDate: "১৫ ডিসে ২০২৪", status: "পেইড" },
-];
-
-const statusColors = {
-  "পেইড": "bg-success/10 text-success border-success/30",
-  "পেন্ডিং": "bg-warning/10 text-warning border-warning/30",
-  "ওভারডিউ": "bg-destructive/10 text-destructive border-destructive/30",
-  "ড্রাফট": "bg-muted text-muted-foreground border-border",
-};
+function formatDate(dateStr: string) {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('bn-BD', { day: 'numeric', month: 'short', year: 'numeric' });
+}
 
 export default function FinanceInvoices() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("সব");
+  
+  const { data: invoices = [], isLoading, error } = useInvoices();
+  const { data: stats } = useInvoiceStats();
 
-  const stats = {
-    total: "৳১০,৮৫,০০০",
-    paid: "৳৬,০০,০০০",
-    pending: "৳১,৫০,০০০",
-    overdue: "৳৩,৫০,০০০",
+  const statusFilterMap: Record<string, string> = {
+    "সব": "all",
+    "পেইড": "paid",
+    "পেন্ডিং": "pending",
+    "ওভারডিউ": "overdue",
+    "ড্রাফট": "draft",
   };
+
+  const filteredInvoices = invoices.filter(inv => {
+    const matchesSearch = inv.invoice_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (inv.client_name?.toLowerCase() || '').includes(searchQuery.toLowerCase());
+    
+    const filterStatus = statusFilterMap[statusFilter];
+    const matchesStatus = filterStatus === "all" || inv.status === filterStatus;
+    
+    return matchesSearch && matchesStatus;
+  });
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-destructive">ডেটা লোড করতে সমস্যা হয়েছে</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -60,19 +83,19 @@ export default function FinanceInvoices() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="stat-card">
           <p className="text-sm text-muted-foreground">মোট ইনভয়েস</p>
-          <p className="text-2xl font-bold mt-1">{stats.total}</p>
+          <p className="text-2xl font-bold mt-1">{formatCurrency(stats?.total || 0)}</p>
         </div>
         <div className="stat-card">
           <p className="text-sm text-muted-foreground">পেইড</p>
-          <p className="text-2xl font-bold mt-1 text-success">{stats.paid}</p>
+          <p className="text-2xl font-bold mt-1 text-success">{formatCurrency(stats?.paid || 0)}</p>
         </div>
         <div className="stat-card">
           <p className="text-sm text-muted-foreground">পেন্ডিং</p>
-          <p className="text-2xl font-bold mt-1 text-warning">{stats.pending}</p>
+          <p className="text-2xl font-bold mt-1 text-warning">{formatCurrency(stats?.pending || 0)}</p>
         </div>
         <div className="stat-card">
           <p className="text-sm text-muted-foreground">ওভারডিউ</p>
-          <p className="text-2xl font-bold mt-1 text-destructive">{stats.overdue}</p>
+          <p className="text-2xl font-bold mt-1 text-destructive">{formatCurrency(stats?.overdue || 0)}</p>
         </div>
       </div>
 
@@ -107,87 +130,106 @@ export default function FinanceInvoices() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="table-container overflow-x-auto">
-        <table className="w-full min-w-[800px]">
-          <thead>
-            <tr className="border-b border-border bg-muted/50">
-              <th className="text-left p-4 font-medium">ইনভয়েস নং</th>
-              <th className="text-left p-4 font-medium">ক্লায়েন্ট</th>
-              <th className="text-left p-4 font-medium">প্রজেক্ট</th>
-              <th className="text-left p-4 font-medium">পরিমাণ</th>
-              <th className="text-left p-4 font-medium">তারিখ</th>
-              <th className="text-left p-4 font-medium">শেষ তারিখ</th>
-              <th className="text-left p-4 font-medium">স্ট্যাটাস</th>
-              <th className="text-right p-4 font-medium">অ্যাকশন</th>
-            </tr>
-          </thead>
-          <tbody>
-            {invoices.map((invoice) => (
-              <tr
-                key={invoice.id}
-                className="border-b border-border hover:bg-muted/30 transition-colors"
-              >
-                <td className="p-4">
-                  <span className="font-mono font-medium text-primary">
-                    {invoice.id}
-                  </span>
-                </td>
-                <td className="p-4 font-medium">{invoice.client}</td>
-                <td className="p-4 text-muted-foreground">{invoice.project}</td>
-                <td className="p-4 font-semibold">{invoice.amount}</td>
-                <td className="p-4 text-muted-foreground">{invoice.date}</td>
-                <td className="p-4 text-muted-foreground">{invoice.dueDate}</td>
-                <td className="p-4">
-                  <Badge
-                    variant="outline"
-                    className={cn("text-xs", statusColors[invoice.status])}
-                  >
-                    {invoice.status}
-                  </Badge>
-                </td>
-                <td className="p-4">
-                  <div className="flex items-center justify-end gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <Download className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <Send className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <Printer className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      )}
 
-      {/* Pagination */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          মোট {invoices.length}টি ইনভয়েস দেখানো হচ্ছে
-        </p>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" disabled>
-            পূর্ববর্তী
-          </Button>
-          <Button variant="outline" size="sm" className="bg-primary text-primary-foreground">
-            ১
-          </Button>
-          <Button variant="outline" size="sm">
-            ২
-          </Button>
-          <Button variant="outline" size="sm">
-            পরবর্তী
+      {/* Empty State */}
+      {!isLoading && filteredInvoices.length === 0 && (
+        <div className="flex flex-col items-center justify-center h-64 text-center">
+          <p className="text-muted-foreground mb-2">কোনো ইনভয়েস পাওয়া যায়নি</p>
+          <Button className="btn-gradient gap-2">
+            <Plus className="h-4 w-4" />
+            প্রথম ইনভয়েস তৈরি করুন
           </Button>
         </div>
-      </div>
+      )}
+
+      {/* Table */}
+      {!isLoading && filteredInvoices.length > 0 && (
+        <div className="table-container overflow-x-auto">
+          <table className="w-full min-w-[800px]">
+            <thead>
+              <tr className="border-b border-border bg-muted/50">
+                <th className="text-left p-4 font-medium">ইনভয়েস নং</th>
+                <th className="text-left p-4 font-medium">ক্লায়েন্ট</th>
+                <th className="text-left p-4 font-medium">প্রজেক্ট</th>
+                <th className="text-left p-4 font-medium">পরিমাণ</th>
+                <th className="text-left p-4 font-medium">তারিখ</th>
+                <th className="text-left p-4 font-medium">শেষ তারিখ</th>
+                <th className="text-left p-4 font-medium">স্ট্যাটাস</th>
+                <th className="text-right p-4 font-medium">অ্যাকশন</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredInvoices.map((invoice) => (
+                <tr
+                  key={invoice.id}
+                  className="border-b border-border hover:bg-muted/30 transition-colors"
+                >
+                  <td className="p-4">
+                    <span className="font-mono font-medium text-primary">
+                      {invoice.invoice_number}
+                    </span>
+                  </td>
+                  <td className="p-4 font-medium">{invoice.client_name || '-'}</td>
+                  <td className="p-4 text-muted-foreground">{invoice.project_name || '-'}</td>
+                  <td className="p-4 font-semibold">৳{invoice.total_amount.toLocaleString('bn-BD')}</td>
+                  <td className="p-4 text-muted-foreground">{formatDate(invoice.issue_date)}</td>
+                  <td className="p-4 text-muted-foreground">{formatDate(invoice.due_date)}</td>
+                  <td className="p-4">
+                    <Badge
+                      variant="outline"
+                      className={cn("text-xs", statusColors[invoice.status || 'draft'])}
+                    >
+                      {statusLabels[invoice.status || 'draft']}
+                    </Badge>
+                  </td>
+                  <td className="p-4">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Download className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Send className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Printer className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {!isLoading && filteredInvoices.length > 0 && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            মোট {filteredInvoices.length}টি ইনভয়েস দেখানো হচ্ছে
+          </p>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" disabled>
+              পূর্ববর্তী
+            </Button>
+            <Button variant="outline" size="sm" className="bg-primary text-primary-foreground">
+              ১
+            </Button>
+            <Button variant="outline" size="sm">
+              পরবর্তী
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

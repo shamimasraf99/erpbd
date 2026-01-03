@@ -1,35 +1,21 @@
 import { useState } from "react";
-import { Plus, Search, Filter, MoreHorizontal, Mail, Phone, MapPin } from "lucide-react";
+import { Plus, Search, Filter, MoreHorizontal, Mail, Phone, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useEmployees } from "@/hooks/useEmployees";
 
-interface Employee {
-  id: number;
-  name: string;
-  designation: string;
-  department: string;
-  email: string;
-  phone: string;
-  joinDate: string;
-  status: "সক্রিয়" | "ছুটিতে" | "নিষ্ক্রিয়";
-  avatar: string;
-}
+const statusColors: Record<string, string> = {
+  "active": "bg-success/10 text-success border-success/30",
+  "on_leave": "bg-warning/10 text-warning border-warning/30",
+  "inactive": "bg-destructive/10 text-destructive border-destructive/30",
+};
 
-const employees: Employee[] = [
-  { id: 1, name: "আহমেদ করিম", designation: "সিনিয়র ডেভেলপার", department: "প্রযুক্তি", email: "ahmed@company.com", phone: "০১৭১২৩৪৫৬৭৮", joinDate: "১৫ জানু ২০২২", status: "সক্রিয়", avatar: "আ" },
-  { id: 2, name: "সাবরিনা আক্তার", designation: "UI/UX ডিজাইনার", department: "ডিজাইন", email: "sabrina@company.com", phone: "০১৮১২৩৪৫৬৭৮", joinDate: "২০ মার্চ ২০২২", status: "সক্রিয়", avatar: "সা" },
-  { id: 3, name: "রহিম উদ্দিন", designation: "প্রজেক্ট ম্যানেজার", department: "অপারেশন", email: "rahim@company.com", phone: "০১৯১২৩৪৫৬৭৮", joinDate: "০১ ফেব ২০২১", status: "ছুটিতে", avatar: "র" },
-  { id: 4, name: "তানভীর হোসেন", designation: "জুনিয়র ডেভেলপার", department: "প্রযুক্তি", email: "tanvir@company.com", phone: "০১৬১২৩৪৫৬৭৮", joinDate: "১০ জুন ২০২৩", status: "সক্রিয়", avatar: "ত" },
-  { id: 5, name: "ফারহানা রহমান", designation: "HR ম্যানেজার", department: "মানব সম্পদ", email: "farhana@company.com", phone: "০১৫১২৩৪৫৬৭৮", joinDate: "০৫ এপ্রিল ২০২০", status: "সক্রিয়", avatar: "ফা" },
-  { id: 6, name: "মাহমুদ হাসান", designation: "সিনিয়র QA", department: "প্রযুক্তি", email: "mahmud@company.com", phone: "০১৪১২৩৪৫৬৭৮", joinDate: "১৮ আগস্ট ২০২১", status: "নিষ্ক্রিয়", avatar: "মা" },
-];
-
-const statusColors = {
-  "সক্রিয়": "bg-success/10 text-success border-success/30",
-  "ছুটিতে": "bg-warning/10 text-warning border-warning/30",
-  "নিষ্ক্রিয়": "bg-destructive/10 text-destructive border-destructive/30",
+const statusLabels: Record<string, string> = {
+  "active": "সক্রিয়",
+  "on_leave": "ছুটিতে",
+  "inactive": "নিষ্ক্রিয়",
 };
 
 const departmentColors: Record<string, string> = {
@@ -39,15 +25,33 @@ const departmentColors: Record<string, string> = {
   "মানব সম্পদ": "bg-success/10 text-success",
 };
 
+function formatDate(dateStr: string) {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('bn-BD', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function getInitials(name: string) {
+  return name.split(' ').map(n => n[0]).join('').slice(0, 2);
+}
+
 export default function HRMEmployees() {
   const [searchQuery, setSearchQuery] = useState("");
+  const { data: employees = [], isLoading, error } = useEmployees();
 
   const filteredEmployees = employees.filter(
     (emp) =>
-      emp.name.includes(searchQuery) ||
-      emp.designation.includes(searchQuery) ||
-      emp.department.includes(searchQuery)
+      emp.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (emp.designation?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+      (emp.department_name?.toLowerCase() || '').includes(searchQuery.toLowerCase())
   );
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-destructive">ডেটা লোড করতে সমস্যা হয়েছে</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -89,58 +93,85 @@ export default function HRMEmployees() {
         </div>
       </div>
 
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!isLoading && filteredEmployees.length === 0 && (
+        <div className="flex flex-col items-center justify-center h-64 text-center">
+          <p className="text-muted-foreground mb-2">কোনো কর্মী পাওয়া যায়নি</p>
+          <Button className="btn-gradient gap-2">
+            <Plus className="h-4 w-4" />
+            প্রথম কর্মী যোগ করুন
+          </Button>
+        </div>
+      )}
+
       {/* Employee Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {filteredEmployees.map((employee) => (
-          <div
-            key={employee.id}
-            className="stat-card hover:border-primary/30 transition-all"
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-4">
-                <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-xl font-semibold text-primary">
-                    {employee.avatar}
-                  </span>
+      {!isLoading && filteredEmployees.length > 0 && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {filteredEmployees.map((employee) => (
+            <div
+              key={employee.id}
+              className="stat-card hover:border-primary/30 transition-all"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span className="text-xl font-semibold text-primary">
+                      {getInitials(employee.full_name)}
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">{employee.full_name}</h3>
+                    <p className="text-sm text-muted-foreground">{employee.designation || 'পদবি নেই'}</p>
+                    {employee.department_name && (
+                      <Badge
+                        variant="secondary"
+                        className={cn("mt-1 text-xs", departmentColors[employee.department_name] || "bg-muted")}
+                      >
+                        {employee.department_name}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold">{employee.name}</h3>
-                  <p className="text-sm text-muted-foreground">{employee.designation}</p>
-                  <Badge
-                    variant="secondary"
-                    className={cn("mt-1 text-xs", departmentColors[employee.department])}
-                  >
-                    {employee.department}
-                  </Badge>
-                </div>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
               </div>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </div>
 
-            <div className="mt-4 pt-4 border-t border-border space-y-2">
-              <p className="text-sm flex items-center gap-2 text-muted-foreground">
-                <Mail className="h-4 w-4" />
-                {employee.email}
-              </p>
-              <p className="text-sm flex items-center gap-2 text-muted-foreground">
-                <Phone className="h-4 w-4" />
-                {employee.phone}
-              </p>
-            </div>
+              <div className="mt-4 pt-4 border-t border-border space-y-2">
+                <p className="text-sm flex items-center gap-2 text-muted-foreground">
+                  <Mail className="h-4 w-4" />
+                  {employee.email}
+                </p>
+                {employee.phone && (
+                  <p className="text-sm flex items-center gap-2 text-muted-foreground">
+                    <Phone className="h-4 w-4" />
+                    {employee.phone}
+                  </p>
+                )}
+              </div>
 
-            <div className="mt-4 flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">
-                যোগদান: {employee.joinDate}
-              </span>
-              <Badge variant="outline" className={cn("text-xs", statusColors[employee.status])}>
-                {employee.status}
-              </Badge>
+              <div className="mt-4 flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">
+                  যোগদান: {formatDate(employee.join_date)}
+                </span>
+                <Badge 
+                  variant="outline" 
+                  className={cn("text-xs", statusColors[employee.status || 'active'])}
+                >
+                  {statusLabels[employee.status || 'active']}
+                </Badge>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
