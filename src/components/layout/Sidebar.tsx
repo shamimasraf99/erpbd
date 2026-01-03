@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import {
   LayoutDashboard,
   Users,
@@ -34,6 +35,7 @@ import {
   ChevronRight,
   Sparkles,
   Building2,
+  UserCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -118,11 +120,13 @@ const menuItems: MenuItem[] = [
   { icon: Mail, label: "ইমেইল টেমপ্লেট", href: "/email-templates" },
   { icon: PieChart, label: "রিপোর্ট", href: "/reports" },
   { icon: Sparkles, label: "AI সহায়তা", href: "/ai-assistant" },
+  { icon: UserCircle, label: "প্রোফাইল", href: "/profile" },
   { icon: Settings, label: "সেটিংস", href: "/settings" },
 ];
 
 export function Sidebar() {
   const location = useLocation();
+  const { user } = useAuth();
   const [expandedItems, setExpandedItems] = useState<string[]>(["HRM", "CRM ও প্রি-সেল"]);
 
   const toggleExpand = (label: string) => {
@@ -212,15 +216,19 @@ export function Sidebar() {
 
       {/* Footer */}
       <div className="border-t border-sidebar-border p-4">
-        <div className="flex items-center gap-3">
+        <Link to="/profile" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
           <div className="h-9 w-9 rounded-full bg-primary/20 flex items-center justify-center">
-            <span className="text-sm font-medium text-primary">আ</span>
+            <span className="text-sm font-medium text-primary">
+              {user?.email?.charAt(0).toUpperCase() || "U"}
+            </span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-sidebar-foreground truncate">আহমেদ করিম</p>
-            <p className="text-xs text-sidebar-foreground/60 truncate">অ্যাডমিন</p>
+            <p className="text-sm font-medium text-sidebar-foreground truncate">
+              {user?.email?.split("@")[0] || "ইউজার"}
+            </p>
+            <p className="text-xs text-sidebar-foreground/60 truncate">প্রোফাইল দেখুন</p>
           </div>
-        </div>
+        </Link>
       </div>
     </aside>
   );
