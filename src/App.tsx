@@ -17,6 +17,9 @@ import Projects from "./pages/Projects";
 import Profile from "./pages/Profile";
 import ComingSoon from "./pages/ComingSoon";
 import NotFound from "./pages/NotFound";
+import InventoryStock from "./pages/InventoryStock";
+import InventoryPOS from "./pages/InventoryPOS";
+import InventoryBarcode from "./pages/InventoryBarcode";
 
 const queryClient = new QueryClient();
 
@@ -66,9 +69,9 @@ const App = () => (
             <Route path="/finance/profit-loss" element={<DashboardPage><ComingSoon title="লাভ-ক্ষতি রিপোর্ট" /></DashboardPage>} />
             
             {/* Inventory Routes */}
-            <Route path="/inventory/stock" element={<DashboardPage><ComingSoon title="স্টক ম্যানেজমেন্ট" /></DashboardPage>} />
-            <Route path="/inventory/pos" element={<DashboardPage><ComingSoon title="POS বিলিং" /></DashboardPage>} />
-            <Route path="/inventory/barcode" element={<DashboardPage><ComingSoon title="বারকোড প্রিন্ট" /></DashboardPage>} />
+            <Route path="/inventory/stock" element={<DashboardPage><InventoryStock /></DashboardPage>} />
+            <Route path="/inventory/pos" element={<DashboardPage><InventoryPOS /></DashboardPage>} />
+            <Route path="/inventory/barcode" element={<DashboardPage><InventoryBarcode /></DashboardPage>} />
             
             {/* Contract Routes */}
             <Route path="/contracts" element={<DashboardPage><ComingSoon title="কনট্রাক্ট ম্যানেজমেন্ট" /></DashboardPage>} />
