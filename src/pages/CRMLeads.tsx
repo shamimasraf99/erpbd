@@ -1,10 +1,21 @@
 import { useState } from "react";
-import { Plus, Search, Filter, LayoutGrid, List, MoreHorizontal, Phone, Mail, Building2, Loader2 } from "lucide-react";
+import { Plus, Search, Filter, LayoutGrid, List, MoreHorizontal, Phone, Mail, Building2, Loader2, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useLeads } from "@/hooks/useLeads";
+import { useLeads, Lead } from "@/hooks/useLeads";
+import { LeadDialog } from "@/components/dialogs/LeadDialog";
+import { DeleteConfirmDialog } from "@/components/dialogs/DeleteConfirmDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const stages = ["new", "contacted", "proposal", "negotiation", "won"] as const;
 
@@ -45,7 +56,13 @@ function formatDate(dateStr: string) {
 export default function CRMLeads() {
   const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
   const [searchQuery, setSearchQuery] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  
   const { data: leads = [], isLoading, error } = useLeads();
+  const queryClient = useQueryClient();
 
   const getLeadsByStage = (stage: typeof stages[number]) => {
     return leads.filter((lead) => (lead.stage || 'new') === stage);
@@ -56,6 +73,43 @@ export default function CRMLeads() {
       lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (lead.company?.toLowerCase() || '').includes(searchQuery.toLowerCase())
   );
+
+  const handleEdit = (lead: Lead) => {
+    setSelectedLead(lead);
+    setDialogOpen(true);
+  };
+
+  const handleDelete = (lead: Lead) => {
+    setSelectedLead(lead);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!selectedLead) return;
+    setDeleteLoading(true);
+    
+    try {
+      const { error } = await supabase
+        .from("leads")
+        .delete()
+        .eq("id", selectedLead.id);
+      
+      if (error) throw error;
+      
+      toast.success("লিড ডিলিট করা হয়েছে");
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      setDeleteDialogOpen(false);
+    } catch (error: any) {
+      toast.error(error.message || "ডিলিট করতে সমস্যা হয়েছে");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleAddNew = () => {
+    setSelectedLead(null);
+    setDialogOpen(true);
+  };
 
   if (error) {
     return (
@@ -73,7 +127,7 @@ export default function CRMLeads() {
           <h1 className="text-2xl font-bold">লিড ম্যানেজমেন্ট</h1>
           <p className="text-muted-foreground">সম্ভাব্য ক্লায়েন্টদের ট্র্যাক করুন</p>
         </div>
-        <Button className="btn-gradient gap-2">
+        <Button className="btn-gradient gap-2" onClick={handleAddNew}>
           <Plus className="h-4 w-4" />
           নতুন লিড
         </Button>
@@ -127,7 +181,7 @@ export default function CRMLeads() {
       {!isLoading && leads.length === 0 && (
         <div className="flex flex-col items-center justify-center h-64 text-center">
           <p className="text-muted-foreground mb-2">কোনো লিড পাওয়া যায়নি</p>
-          <Button className="btn-gradient gap-2">
+          <Button className="btn-gradient gap-2" onClick={handleAddNew}>
             <Plus className="h-4 w-4" />
             প্রথম লিড যোগ করুন
           </Button>
@@ -147,7 +201,7 @@ export default function CRMLeads() {
                       {getLeadsByStage(stage).length}
                     </Badge>
                   </div>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleAddNew}>
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
@@ -165,9 +219,26 @@ export default function CRMLeads() {
                             </p>
                           )}
                         </div>
-                        <Button variant="ghost" size="icon" className="h-6 w-6">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-6 w-6">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEdit(lead)}>
+                              <Pencil className="h-4 w-4 mr-2" />
+                              এডিট করুন
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleDelete(lead)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              ডিলিট করুন
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
 
                       <div className="space-y-2 mb-3">
@@ -237,9 +308,26 @@ export default function CRMLeads() {
                   </td>
                   <td className="p-4 text-muted-foreground">{formatDate(lead.created_at)}</td>
                   <td className="p-4 text-right">
-                    <Button variant="ghost" size="icon">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleEdit(lead)}>
+                          <Pencil className="h-4 w-4 mr-2" />
+                          এডিট করুন
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => handleDelete(lead)}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          ডিলিট করুন
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </td>
                 </tr>
               ))}
@@ -247,6 +335,21 @@ export default function CRMLeads() {
           </table>
         </div>
       )}
+
+      <LeadDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        lead={selectedLead}
+      />
+
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={confirmDelete}
+        loading={deleteLoading}
+        title="লিড ডিলিট করুন"
+        description={`আপনি কি "${selectedLead?.name}" লিড ডিলিট করতে চান? এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।`}
+      />
     </div>
   );
 }

@@ -1,10 +1,21 @@
 import { useState } from "react";
-import { Plus, Search, Filter, MoreHorizontal, Mail, Phone, Loader2 } from "lucide-react";
+import { Plus, Search, Filter, MoreHorizontal, Mail, Phone, Loader2, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useEmployees } from "@/hooks/useEmployees";
+import { useEmployees, Employee } from "@/hooks/useEmployees";
+import { EmployeeDialog } from "@/components/dialogs/EmployeeDialog";
+import { DeleteConfirmDialog } from "@/components/dialogs/DeleteConfirmDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const statusColors: Record<string, string> = {
   "active": "bg-success/10 text-success border-success/30",
@@ -36,7 +47,13 @@ function getInitials(name: string) {
 
 export default function HRMEmployees() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  
   const { data: employees = [], isLoading, error } = useEmployees();
+  const queryClient = useQueryClient();
 
   const filteredEmployees = employees.filter(
     (emp) =>
@@ -44,6 +61,43 @@ export default function HRMEmployees() {
       (emp.designation?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
       (emp.department_name?.toLowerCase() || '').includes(searchQuery.toLowerCase())
   );
+
+  const handleEdit = (employee: Employee) => {
+    setSelectedEmployee(employee);
+    setDialogOpen(true);
+  };
+
+  const handleDelete = (employee: Employee) => {
+    setSelectedEmployee(employee);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!selectedEmployee) return;
+    setDeleteLoading(true);
+    
+    try {
+      const { error } = await supabase
+        .from("employees")
+        .delete()
+        .eq("id", selectedEmployee.id);
+      
+      if (error) throw error;
+      
+      toast.success("কর্মী ডিলিট করা হয়েছে");
+      queryClient.invalidateQueries({ queryKey: ["employees"] });
+      setDeleteDialogOpen(false);
+    } catch (error: any) {
+      toast.error(error.message || "ডিলিট করতে সমস্যা হয়েছে");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleAddNew = () => {
+    setSelectedEmployee(null);
+    setDialogOpen(true);
+  };
 
   if (error) {
     return (
@@ -61,7 +115,7 @@ export default function HRMEmployees() {
           <h1 className="text-2xl font-bold">কর্মী তালিকা</h1>
           <p className="text-muted-foreground">মোট {employees.length} জন কর্মী</p>
         </div>
-        <Button className="btn-gradient gap-2">
+        <Button className="btn-gradient gap-2" onClick={handleAddNew}>
           <Plus className="h-4 w-4" />
           নতুন কর্মী যোগ করুন
         </Button>
@@ -104,7 +158,7 @@ export default function HRMEmployees() {
       {!isLoading && filteredEmployees.length === 0 && (
         <div className="flex flex-col items-center justify-center h-64 text-center">
           <p className="text-muted-foreground mb-2">কোনো কর্মী পাওয়া যায়নি</p>
-          <Button className="btn-gradient gap-2">
+          <Button className="btn-gradient gap-2" onClick={handleAddNew}>
             <Plus className="h-4 w-4" />
             প্রথম কর্মী যোগ করুন
           </Button>
@@ -139,9 +193,26 @@ export default function HRMEmployees() {
                     )}
                   </div>
                 </div>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleEdit(employee)}>
+                      <Pencil className="h-4 w-4 mr-2" />
+                      এডিট করুন
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => handleDelete(employee)}
+                      className="text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      ডিলিট করুন
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
 
               <div className="mt-4 pt-4 border-t border-border space-y-2">
@@ -172,6 +243,21 @@ export default function HRMEmployees() {
           ))}
         </div>
       )}
+
+      <EmployeeDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        employee={selectedEmployee}
+      />
+
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={confirmDelete}
+        loading={deleteLoading}
+        title="কর্মী ডিলিট করুন"
+        description={`আপনি কি "${selectedEmployee?.full_name}" কে ডিলিট করতে চান? এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।`}
+      />
     </div>
   );
 }

@@ -1,10 +1,21 @@
 import { useState } from "react";
-import { Plus, Search, Filter, LayoutGrid, List, MoreHorizontal, Calendar, Loader2 } from "lucide-react";
+import { Plus, Search, Filter, LayoutGrid, List, MoreHorizontal, Calendar, Loader2, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useProjects, useProjectStats } from "@/hooks/useProjects";
+import { useProjects, useProjectStats, Project } from "@/hooks/useProjects";
+import { ProjectDialog } from "@/components/dialogs/ProjectDialog";
+import { DeleteConfirmDialog } from "@/components/dialogs/DeleteConfirmDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const statusColors: Record<string, string> = {
   "planning": "bg-info/10 text-info border-info/30",
@@ -59,15 +70,58 @@ function formatDate(dateStr: string | null) {
 export default function Projects() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   
   const { data: projects = [], isLoading, error } = useProjects();
   const { data: stats } = useProjectStats();
+  const queryClient = useQueryClient();
 
   const filteredProjects = projects.filter(
     (proj) =>
       proj.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (proj.client_name?.toLowerCase() || '').includes(searchQuery.toLowerCase())
   );
+
+  const handleEdit = (project: Project) => {
+    setSelectedProject(project);
+    setDialogOpen(true);
+  };
+
+  const handleDelete = (project: Project) => {
+    setSelectedProject(project);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!selectedProject) return;
+    setDeleteLoading(true);
+    
+    try {
+      const { error } = await supabase
+        .from("projects")
+        .delete()
+        .eq("id", selectedProject.id);
+      
+      if (error) throw error;
+      
+      toast.success("প্রজেক্ট ডিলিট করা হয়েছে");
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["project-stats"] });
+      setDeleteDialogOpen(false);
+    } catch (error: any) {
+      toast.error(error.message || "ডিলিট করতে সমস্যা হয়েছে");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleAddNew = () => {
+    setSelectedProject(null);
+    setDialogOpen(true);
+  };
 
   if (error) {
     return (
@@ -85,7 +139,7 @@ export default function Projects() {
           <h1 className="text-2xl font-bold">প্রজেক্ট ম্যানেজমেন্ট</h1>
           <p className="text-muted-foreground">সকল প্রজেক্ট ট্র্যাক ও ম্যানেজ করুন</p>
         </div>
-        <Button className="btn-gradient gap-2">
+        <Button className="btn-gradient gap-2" onClick={handleAddNew}>
           <Plus className="h-4 w-4" />
           নতুন প্রজেক্ট
         </Button>
@@ -155,7 +209,7 @@ export default function Projects() {
       {!isLoading && filteredProjects.length === 0 && (
         <div className="flex flex-col items-center justify-center h-64 text-center">
           <p className="text-muted-foreground mb-2">কোনো প্রজেক্ট পাওয়া যায়নি</p>
-          <Button className="btn-gradient gap-2">
+          <Button className="btn-gradient gap-2" onClick={handleAddNew}>
             <Plus className="h-4 w-4" />
             প্রথম প্রজেক্ট তৈরি করুন
           </Button>
@@ -175,9 +229,26 @@ export default function Projects() {
                   <h3 className="font-semibold line-clamp-1">{project.name}</h3>
                   <p className="text-sm text-muted-foreground">{project.client_name || 'ক্লায়েন্ট নেই'}</p>
                 </div>
-                <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleEdit(project)}>
+                      <Pencil className="h-4 w-4 mr-2" />
+                      এডিট করুন
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => handleDelete(project)}
+                      className="text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      ডিলিট করুন
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
 
               {project.description && (
@@ -265,9 +336,26 @@ export default function Projects() {
                   <td className="p-4 text-muted-foreground">{formatDate(project.end_date)}</td>
                   <td className="p-4 font-medium text-success">{formatCurrency(project.budget)}</td>
                   <td className="p-4 text-right">
-                    <Button variant="ghost" size="icon">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleEdit(project)}>
+                          <Pencil className="h-4 w-4 mr-2" />
+                          এডিট করুন
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => handleDelete(project)}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          ডিলিট করুন
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </td>
                 </tr>
               ))}
@@ -275,6 +363,21 @@ export default function Projects() {
           </table>
         </div>
       )}
+
+      <ProjectDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        project={selectedProject}
+      />
+
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={confirmDelete}
+        loading={deleteLoading}
+        title="প্রজেক্ট ডিলিট করুন"
+        description={`আপনি কি "${selectedProject?.name}" প্রজেক্ট ডিলিট করতে চান? এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।`}
+      />
     </div>
   );
 }

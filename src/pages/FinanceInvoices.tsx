@@ -1,10 +1,22 @@
 import { useState } from "react";
-import { Plus, Search, Filter, MoreHorizontal, Download, Send, Eye, Printer, Loader2 } from "lucide-react";
+import { Plus, Search, Filter, MoreHorizontal, Download, Send, Eye, Printer, Loader2, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useInvoices, useInvoiceStats } from "@/hooks/useInvoices";
+import { useInvoices, useInvoiceStats, Invoice } from "@/hooks/useInvoices";
+import { InvoiceDialog } from "@/components/dialogs/InvoiceDialog";
+import { DeleteConfirmDialog } from "@/components/dialogs/DeleteConfirmDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const statusColors: Record<string, string> = {
   "paid": "bg-success/10 text-success border-success/30",
@@ -35,9 +47,14 @@ function formatDate(dateStr: string) {
 export default function FinanceInvoices() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("সব");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   
   const { data: invoices = [], isLoading, error } = useInvoices();
   const { data: stats } = useInvoiceStats();
+  const queryClient = useQueryClient();
 
   const statusFilterMap: Record<string, string> = {
     "সব": "all",
@@ -57,6 +74,44 @@ export default function FinanceInvoices() {
     return matchesSearch && matchesStatus;
   });
 
+  const handleEdit = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    setDialogOpen(true);
+  };
+
+  const handleDelete = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!selectedInvoice) return;
+    setDeleteLoading(true);
+    
+    try {
+      const { error } = await supabase
+        .from("invoices")
+        .delete()
+        .eq("id", selectedInvoice.id);
+      
+      if (error) throw error;
+      
+      toast.success("ইনভয়েস ডিলিট করা হয়েছে");
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["invoice-stats"] });
+      setDeleteDialogOpen(false);
+    } catch (error: any) {
+      toast.error(error.message || "ডিলিট করতে সমস্যা হয়েছে");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleAddNew = () => {
+    setSelectedInvoice(null);
+    setDialogOpen(true);
+  };
+
   if (error) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -73,7 +128,7 @@ export default function FinanceInvoices() {
           <h1 className="text-2xl font-bold">ইনভয়েস</h1>
           <p className="text-muted-foreground">সকল বিল ও ইনভয়েস ম্যানেজ করুন</p>
         </div>
-        <Button className="btn-gradient gap-2">
+        <Button className="btn-gradient gap-2" onClick={handleAddNew}>
           <Plus className="h-4 w-4" />
           নতুন ইনভয়েস
         </Button>
@@ -141,7 +196,7 @@ export default function FinanceInvoices() {
       {!isLoading && filteredInvoices.length === 0 && (
         <div className="flex flex-col items-center justify-center h-64 text-center">
           <p className="text-muted-foreground mb-2">কোনো ইনভয়েস পাওয়া যায়নি</p>
-          <Button className="btn-gradient gap-2">
+          <Button className="btn-gradient gap-2" onClick={handleAddNew}>
             <Plus className="h-4 w-4" />
             প্রথম ইনভয়েস তৈরি করুন
           </Button>
@@ -193,15 +248,39 @@ export default function FinanceInvoices() {
                       <Button variant="ghost" size="icon" className="h-8 w-8">
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Download className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Send className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Printer className="h-4 w-4" />
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleEdit(invoice)}>
+                            <Pencil className="h-4 w-4 mr-2" />
+                            এডিট করুন
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <Download className="h-4 w-4 mr-2" />
+                            ডাউনলোড
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <Send className="h-4 w-4 mr-2" />
+                            পাঠান
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <Printer className="h-4 w-4 mr-2" />
+                            প্রিন্ট
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => handleDelete(invoice)}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            ডিলিট করুন
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </td>
                 </tr>
@@ -230,6 +309,21 @@ export default function FinanceInvoices() {
           </div>
         </div>
       )}
+
+      <InvoiceDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        invoice={selectedInvoice}
+      />
+
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={confirmDelete}
+        loading={deleteLoading}
+        title="ইনভয়েস ডিলিট করুন"
+        description={`আপনি কি "${selectedInvoice?.invoice_number}" ইনভয়েস ডিলিট করতে চান? এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।`}
+      />
     </div>
   );
 }
