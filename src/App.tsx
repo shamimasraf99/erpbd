@@ -14,6 +14,7 @@ import CRMClients from "./pages/CRMClients";
 import HRMEmployees from "./pages/HRMEmployees";
 import FinanceInvoices from "./pages/FinanceInvoices";
 import Projects from "./pages/Projects";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/hrm/employees" element={<DashboardPage><HRMEmployees /></DashboardPage>} />
             <Route path="/finance/invoices" element={<DashboardPage><FinanceInvoices /></DashboardPage>} />
             <Route path="/projects" element={<DashboardPage><Projects /></DashboardPage>} />
+            <Route path="/profile" element={<DashboardPage><Profile /></DashboardPage>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
