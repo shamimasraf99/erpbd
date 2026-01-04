@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Search, Plus, Receipt, TrendingDown, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { expenseSchema, getFirstErrorMessage } from '@/lib/validations';
 import { format } from 'date-fns';
 import { bn } from 'date-fns/locale';
 import {
@@ -140,10 +141,14 @@ export default function FinanceExpenses() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title.trim()) {
-      toast.error('খরচের নাম দিন');
+    
+    // Validate form data with Zod schema
+    const result = expenseSchema.safeParse(formData);
+    if (!result.success) {
+      toast.error(getFirstErrorMessage(result.error));
       return;
     }
+    
     saveMutation.mutate(formData);
   };
 

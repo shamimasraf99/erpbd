@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { clientSchema, getFirstErrorMessage } from "@/lib/validations";
 import {
   Dialog,
   DialogContent,
@@ -65,8 +66,10 @@ export function ClientDialog({ open, onOpenChange, client }: ClientDialogProps) 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name.trim()) {
-      toast.error("ক্লায়েন্টের নাম আবশ্যক");
+    // Validate form data with Zod schema
+    const result = clientSchema.safeParse(formData);
+    if (!result.success) {
+      toast.error(getFirstErrorMessage(result.error));
       return;
     }
 

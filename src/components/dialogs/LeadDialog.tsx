@@ -10,6 +10,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import type { Lead } from "@/hooks/useLeads";
+import { leadSchema, getFirstErrorMessage } from "@/lib/validations";
 
 interface LeadDialogProps {
   open: boolean;
@@ -60,6 +61,14 @@ export function LeadDialog({ open, onOpenChange, lead }: LeadDialogProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate form data with Zod schema
+    const result = leadSchema.safeParse(formData);
+    if (!result.success) {
+      toast.error(getFirstErrorMessage(result.error));
+      return;
+    }
+    
     setLoading(true);
 
     try {

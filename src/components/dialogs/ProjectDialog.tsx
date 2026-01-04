@@ -10,6 +10,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import type { Project } from "@/hooks/useProjects";
+import { projectSchema, getFirstErrorMessage } from "@/lib/validations";
 
 interface ProjectDialogProps {
   open: boolean;
@@ -72,6 +73,14 @@ export function ProjectDialog({ open, onOpenChange, project }: ProjectDialogProp
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate form data with Zod schema
+    const result = projectSchema.safeParse(formData);
+    if (!result.success) {
+      toast.error(getFirstErrorMessage(result.error));
+      return;
+    }
+    
     setLoading(true);
 
     try {

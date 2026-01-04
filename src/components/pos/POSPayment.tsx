@@ -6,6 +6,8 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { CreditCard, Banknote, Smartphone } from 'lucide-react';
 import { CartItem } from './POSCart';
+import { toast } from 'sonner';
+import { posPaymentSchema, getFirstErrorMessage } from '@/lib/validations';
 
 interface POSPaymentProps {
   open: boolean;
@@ -42,6 +44,19 @@ export const POSPayment = ({
   const changeAmount = receivedAmount - total;
 
   const handleComplete = () => {
+    // Validate payment data with Zod schema
+    const result = posPaymentSchema.safeParse({
+      customerName: customerName || undefined,
+      customerPhone: customerPhone || undefined,
+      paymentMethod,
+      receivedAmount,
+    });
+    
+    if (!result.success) {
+      toast.error(getFirstErrorMessage(result.error));
+      return;
+    }
+    
     onComplete({
       customer_name: customerName || undefined,
       customer_phone: customerPhone || undefined,

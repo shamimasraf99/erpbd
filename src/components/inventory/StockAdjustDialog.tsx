@@ -6,6 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Product } from '@/hooks/useProducts';
+import { toast } from 'sonner';
+import { stockAdjustmentSchema, getFirstErrorMessage } from '@/lib/validations';
 
 interface StockAdjustDialogProps {
   open: boolean;
@@ -29,6 +31,19 @@ export const StockAdjustDialog = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (product) {
+      // Validate form data with Zod schema
+      const result = stockAdjustmentSchema.safeParse({
+        productId: product.id,
+        quantity,
+        type,
+        notes: notes || undefined,
+      });
+      
+      if (!result.success) {
+        toast.error(getFirstErrorMessage(result.error));
+        return;
+      }
+      
       onSubmit({
         productId: product.id,
         quantity,

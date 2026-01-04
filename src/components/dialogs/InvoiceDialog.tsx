@@ -10,6 +10,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import type { Invoice } from "@/hooks/useInvoices";
+import { invoiceSchema, getFirstErrorMessage } from "@/lib/validations";
 
 interface InvoiceDialogProps {
   open: boolean;
@@ -81,6 +82,14 @@ export function InvoiceDialog({ open, onOpenChange, invoice }: InvoiceDialogProp
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate form data with Zod schema
+    const result = invoiceSchema.safeParse(formData);
+    if (!result.success) {
+      toast.error(getFirstErrorMessage(result.error));
+      return;
+    }
+    
     setLoading(true);
 
     try {
