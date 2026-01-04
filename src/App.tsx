@@ -12,8 +12,13 @@ import Dashboard from "./pages/Dashboard";
 import CRMLeads from "./pages/CRMLeads";
 import CRMClients from "./pages/CRMClients";
 import HRMEmployees from "./pages/HRMEmployees";
+import HRMAttendance from "./pages/HRMAttendance";
+import HRMLeave from "./pages/HRMLeave";
 import FinanceInvoices from "./pages/FinanceInvoices";
+import FinanceExpenses from "./pages/FinanceExpenses";
+import FinancePayments from "./pages/FinancePayments";
 import Projects from "./pages/Projects";
+import ProjectTasks from "./pages/ProjectTasks";
 import Profile from "./pages/Profile";
 import ComingSoon from "./pages/ComingSoon";
 import NotFound from "./pages/NotFound";
@@ -21,10 +26,12 @@ import InventoryStock from "./pages/InventoryStock";
 import InventoryPOS from "./pages/InventoryPOS";
 import InventoryBarcode from "./pages/InventoryBarcode";
 import Settings from "./pages/Settings";
+import UserManagement from "./pages/UserManagement";
+import InternalChat from "./pages/InternalChat";
+import EmailTemplates from "./pages/EmailTemplates";
 
 const queryClient = new QueryClient();
 
-// Wrapper component for pages that need the dashboard layout
 const DashboardPage = ({ children }: { children: React.ReactNode }) => (
   <ProtectedRoute>
     <DashboardLayout>{children}</DashboardLayout>
@@ -50,22 +57,22 @@ const App = () => (
             
             {/* HRM Routes */}
             <Route path="/hrm/employees" element={<DashboardPage><HRMEmployees /></DashboardPage>} />
-            <Route path="/hrm/attendance" element={<DashboardPage><ComingSoon title="উপস্থিতি ট্র্যাকিং" /></DashboardPage>} />
-            <Route path="/hrm/leave" element={<DashboardPage><ComingSoon title="ছুটি ব্যবস্থাপনা" /></DashboardPage>} />
+            <Route path="/hrm/attendance" element={<DashboardPage><HRMAttendance /></DashboardPage>} />
+            <Route path="/hrm/leave" element={<DashboardPage><HRMLeave /></DashboardPage>} />
             <Route path="/hrm/payroll" element={<DashboardPage><ComingSoon title="বেতন (Payroll)" /></DashboardPage>} />
             <Route path="/hrm/performance" element={<DashboardPage><ComingSoon title="পারফরম্যান্স রিভিউ" /></DashboardPage>} />
             <Route path="/hrm/goals" element={<DashboardPage><ComingSoon title="গোল ট্র্যাকিং" /></DashboardPage>} />
             
             {/* Project Routes */}
             <Route path="/projects" element={<DashboardPage><Projects /></DashboardPage>} />
-            <Route path="/projects/tasks" element={<DashboardPage><ComingSoon title="টাস্ক ম্যানেজমেন্ট" /></DashboardPage>} />
+            <Route path="/projects/tasks" element={<DashboardPage><ProjectTasks /></DashboardPage>} />
             <Route path="/projects/timesheet" element={<DashboardPage><ComingSoon title="টাইমশিট" /></DashboardPage>} />
             <Route path="/projects/budget" element={<DashboardPage><ComingSoon title="প্রজেক্ট বাজেট" /></DashboardPage>} />
             
             {/* Finance Routes */}
             <Route path="/finance/invoices" element={<DashboardPage><FinanceInvoices /></DashboardPage>} />
-            <Route path="/finance/payments" element={<DashboardPage><ComingSoon title="পেমেন্ট ট্র্যাকিং" /></DashboardPage>} />
-            <Route path="/finance/expenses" element={<DashboardPage><ComingSoon title="খরচ ব্যবস্থাপনা" /></DashboardPage>} />
+            <Route path="/finance/payments" element={<DashboardPage><FinancePayments /></DashboardPage>} />
+            <Route path="/finance/expenses" element={<DashboardPage><FinanceExpenses /></DashboardPage>} />
             <Route path="/finance/accounting" element={<DashboardPage><ComingSoon title="অ্যাকাউন্টিং" /></DashboardPage>} />
             <Route path="/finance/profit-loss" element={<DashboardPage><ComingSoon title="লাভ-ক্ষতি রিপোর্ট" /></DashboardPage>} />
             
@@ -79,18 +86,17 @@ const App = () => (
             <Route path="/contracts/signature" element={<DashboardPage><ComingSoon title="ডিজিটাল সিগনেচার" /></DashboardPage>} />
             
             {/* User Management */}
-            <Route path="/users" element={<DashboardPage><ComingSoon title="ইউজার ম্যানেজমেন্ট" /></DashboardPage>} />
+            <Route path="/users" element={<DashboardPage><UserManagement /></DashboardPage>} />
             <Route path="/roles" element={<DashboardPage><ComingSoon title="রোল ও পারমিশন" /></DashboardPage>} />
             
             {/* Other Routes */}
-            <Route path="/chat" element={<DashboardPage><ComingSoon title="ইন্টারনাল চ্যাট" /></DashboardPage>} />
-            <Route path="/email-templates" element={<DashboardPage><ComingSoon title="ইমেইল টেমপ্লেট" /></DashboardPage>} />
+            <Route path="/chat" element={<DashboardPage><InternalChat /></DashboardPage>} />
+            <Route path="/email-templates" element={<DashboardPage><EmailTemplates /></DashboardPage>} />
             <Route path="/reports" element={<DashboardPage><ComingSoon title="রিপোর্ট" /></DashboardPage>} />
             <Route path="/ai-assistant" element={<DashboardPage><ComingSoon title="AI সহায়তা" /></DashboardPage>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/profile" element={<DashboardPage><Profile /></DashboardPage>} />
             
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
