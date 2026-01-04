@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounting_entries: {
+        Row: {
+          account_name: string
+          created_at: string
+          created_by: string | null
+          credit: number | null
+          debit: number | null
+          description: string | null
+          entry_date: string
+          entry_type: string
+          id: string
+          reference_id: string | null
+          reference_type: string | null
+        }
+        Insert: {
+          account_name: string
+          created_at?: string
+          created_by?: string | null
+          credit?: number | null
+          debit?: number | null
+          description?: string | null
+          entry_date?: string
+          entry_type: string
+          id?: string
+          reference_id?: string | null
+          reference_type?: string | null
+        }
+        Update: {
+          account_name?: string
+          created_at?: string
+          created_by?: string | null
+          credit?: number | null
+          debit?: number | null
+          description?: string | null
+          entry_date?: string
+          entry_type?: string
+          id?: string
+          reference_id?: string | null
+          reference_type?: string | null
+        }
+        Relationships: []
+      }
       attendance: {
         Row: {
           check_in: string | null
@@ -148,6 +190,148 @@ export type Database = {
         }
         Relationships: []
       }
+      contracts: {
+        Row: {
+          client_id: string | null
+          client_signature_date: string | null
+          company_signature_date: string | null
+          contract_number: string
+          created_at: string
+          document_url: string | null
+          end_date: string | null
+          id: string
+          project_id: string | null
+          signed_by_client: boolean | null
+          signed_by_company: boolean | null
+          start_date: string
+          status: string | null
+          terms: string | null
+          title: string
+          updated_at: string
+          value: number
+        }
+        Insert: {
+          client_id?: string | null
+          client_signature_date?: string | null
+          company_signature_date?: string | null
+          contract_number: string
+          created_at?: string
+          document_url?: string | null
+          end_date?: string | null
+          id?: string
+          project_id?: string | null
+          signed_by_client?: boolean | null
+          signed_by_company?: boolean | null
+          start_date: string
+          status?: string | null
+          terms?: string | null
+          title: string
+          updated_at?: string
+          value?: number
+        }
+        Update: {
+          client_id?: string | null
+          client_signature_date?: string | null
+          company_signature_date?: string | null
+          contract_number?: string
+          created_at?: string
+          document_url?: string | null
+          end_date?: string | null
+          id?: string
+          project_id?: string | null
+          signed_by_client?: boolean | null
+          signed_by_company?: boolean | null
+          start_date?: string
+          status?: string | null
+          terms?: string | null
+          title?: string
+          updated_at?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contracts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deals: {
+        Row: {
+          amount: number
+          assigned_to: string | null
+          client_id: string | null
+          created_at: string
+          expected_close_date: string | null
+          id: string
+          lead_id: string | null
+          notes: string | null
+          probability: number | null
+          stage: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          assigned_to?: string | null
+          client_id?: string | null
+          created_at?: string
+          expected_close_date?: string | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          probability?: number | null
+          stage?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          assigned_to?: string | null
+          client_id?: string | null
+          created_at?: string
+          expected_close_date?: string | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          probability?: number | null
+          stage?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deals_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deals_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deals_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       departments: {
         Row: {
           created_at: string
@@ -222,6 +406,68 @@ export type Database = {
           },
         ]
       }
+      estimates: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          description: string | null
+          discount: number
+          estimate_number: string
+          id: string
+          items: Json | null
+          notes: string | null
+          status: string | null
+          subtotal: number
+          tax: number
+          title: string
+          total: number
+          updated_at: string
+          valid_until: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          description?: string | null
+          discount?: number
+          estimate_number: string
+          id?: string
+          items?: Json | null
+          notes?: string | null
+          status?: string | null
+          subtotal?: number
+          tax?: number
+          title: string
+          total?: number
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          description?: string | null
+          discount?: number
+          estimate_number?: string
+          id?: string
+          items?: Json | null
+          notes?: string | null
+          status?: string | null
+          subtotal?: number
+          tax?: number
+          title?: string
+          total?: number
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estimates_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expenses: {
         Row: {
           amount: number
@@ -275,6 +521,62 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      goals: {
+        Row: {
+          created_at: string
+          current_value: number | null
+          description: string | null
+          employee_id: string | null
+          end_date: string
+          id: string
+          priority: string | null
+          start_date: string
+          status: string | null
+          target_value: number | null
+          title: string
+          unit: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_value?: number | null
+          description?: string | null
+          employee_id?: string | null
+          end_date: string
+          id?: string
+          priority?: string | null
+          start_date: string
+          status?: string | null
+          target_value?: number | null
+          title: string
+          unit?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_value?: number | null
+          description?: string | null
+          employee_id?: string | null
+          end_date?: string
+          id?: string
+          priority?: string | null
+          start_date?: string
+          status?: string | null
+          target_value?: number | null
+          title?: string
+          unit?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goals_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
             referencedColumns: ["id"]
           },
         ]
@@ -576,6 +878,122 @@ export type Database = {
           },
         ]
       }
+      payroll: {
+        Row: {
+          allowances: number
+          basic_salary: number
+          bonus: number
+          created_at: string
+          deductions: number
+          employee_id: string | null
+          id: string
+          month: string
+          net_salary: number
+          notes: string | null
+          payment_date: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          allowances?: number
+          basic_salary?: number
+          bonus?: number
+          created_at?: string
+          deductions?: number
+          employee_id?: string | null
+          id?: string
+          month: string
+          net_salary?: number
+          notes?: string | null
+          payment_date?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          allowances?: number
+          basic_salary?: number
+          bonus?: number
+          created_at?: string
+          deductions?: number
+          employee_id?: string | null
+          id?: string
+          month?: string
+          net_salary?: number
+          notes?: string | null
+          payment_date?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      performance_reviews: {
+        Row: {
+          comments: string | null
+          created_at: string
+          employee_id: string | null
+          goals_achieved: string | null
+          id: string
+          improvements: string | null
+          rating: number | null
+          review_date: string | null
+          review_period: string
+          reviewer_id: string | null
+          status: string | null
+          strengths: string | null
+        }
+        Insert: {
+          comments?: string | null
+          created_at?: string
+          employee_id?: string | null
+          goals_achieved?: string | null
+          id?: string
+          improvements?: string | null
+          rating?: number | null
+          review_date?: string | null
+          review_period: string
+          reviewer_id?: string | null
+          status?: string | null
+          strengths?: string | null
+        }
+        Update: {
+          comments?: string | null
+          created_at?: string
+          employee_id?: string | null
+          goals_achieved?: string | null
+          id?: string
+          improvements?: string | null
+          rating?: number | null
+          review_date?: string | null
+          review_period?: string
+          reviewer_id?: string | null
+          status?: string | null
+          strengths?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "performance_reviews_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "performance_reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pos_sale_items: {
         Row: {
           discount: number
@@ -763,6 +1181,47 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      project_budgets: {
+        Row: {
+          allocated_amount: number
+          category: string
+          created_at: string
+          id: string
+          notes: string | null
+          project_id: string | null
+          spent_amount: number
+          updated_at: string
+        }
+        Insert: {
+          allocated_amount?: number
+          category: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          project_id?: string | null
+          spent_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          allocated_amount?: number
+          category?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          project_id?: string | null
+          spent_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_budgets_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       project_members: {
         Row: {
@@ -983,6 +1442,77 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      timesheets: {
+        Row: {
+          approved_by: string | null
+          billable: boolean | null
+          created_at: string
+          description: string | null
+          employee_id: string | null
+          hours_worked: number
+          id: string
+          project_id: string | null
+          status: string | null
+          task_id: string | null
+          work_date: string
+        }
+        Insert: {
+          approved_by?: string | null
+          billable?: boolean | null
+          created_at?: string
+          description?: string | null
+          employee_id?: string | null
+          hours_worked?: number
+          id?: string
+          project_id?: string | null
+          status?: string | null
+          task_id?: string | null
+          work_date: string
+        }
+        Update: {
+          approved_by?: string | null
+          billable?: boolean | null
+          created_at?: string
+          description?: string | null
+          employee_id?: string | null
+          hours_worked?: number
+          id?: string
+          project_id?: string | null
+          status?: string | null
+          task_id?: string | null
+          work_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timesheets_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timesheets_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timesheets_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timesheets_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
             referencedColumns: ["id"]
           },
         ]
