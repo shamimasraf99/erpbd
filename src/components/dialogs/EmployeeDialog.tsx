@@ -9,6 +9,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import type { Employee } from "@/hooks/useEmployees";
+import { employeeSchema, getFirstErrorMessage } from "@/lib/validations";
 
 interface EmployeeDialogProps {
   open: boolean;
@@ -68,6 +69,14 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate form data with Zod schema
+    const result = employeeSchema.safeParse(formData);
+    if (!result.success) {
+      toast.error(getFirstErrorMessage(result.error));
+      return;
+    }
+    
     setLoading(true);
 
     try {

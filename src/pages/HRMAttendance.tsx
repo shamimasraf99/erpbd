@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Calendar, Clock, Search, Plus, UserCheck, UserX, Coffee } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { attendanceSchema, getFirstErrorMessage } from '@/lib/validations';
 import { bn } from 'date-fns/locale';
 import {
   Dialog,
@@ -94,10 +95,14 @@ export default function HRMAttendance() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.employee_id) {
-      toast.error('কর্মচারী নির্বাচন করুন');
+    
+    // Validate form data with Zod schema
+    const result = attendanceSchema.safeParse(formData);
+    if (!result.success) {
+      toast.error(getFirstErrorMessage(result.error));
       return;
     }
+    
     addMutation.mutate(formData);
   };
 

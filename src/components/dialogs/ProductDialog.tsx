@@ -7,6 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCategories } from '@/hooks/useCategories';
 import { Product, ProductFormData } from '@/hooks/useProducts';
+import { toast } from 'sonner';
+import { productSchema, getFirstErrorMessage } from '@/lib/validations';
 
 interface ProductDialogProps {
   open: boolean;
@@ -72,6 +74,14 @@ export const ProductDialog = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate form data with Zod schema
+    const result = productSchema.safeParse(formData);
+    if (!result.success) {
+      toast.error(getFirstErrorMessage(result.error));
+      return;
+    }
+    
     onSubmit(formData);
   };
 
