@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { useProducts, Product } from '@/hooks/useProducts';
 import { useCategories } from '@/hooks/useCategories';
 import { usePOSSales, CreateSaleData } from '@/hooks/usePOSSales';
+import { useCompanySettings } from '@/hooks/useCompanySettings';
 import { POSProductGrid } from '@/components/pos/POSProductGrid';
 import { POSCart, CartItem } from '@/components/pos/POSCart';
 import { POSPayment } from '@/components/pos/POSPayment';
@@ -19,6 +20,7 @@ const InventoryPOS = () => {
   const { products } = useProducts();
   const { categories } = useCategories();
   const { createSale, getTodaysTotal } = usePOSSales();
+  const { settings: companySettings } = useCompanySettings();
   const { toast } = useToast();
   
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -315,6 +317,13 @@ const InventoryPOS = () => {
             customerPhone={lastSale.customerPhone}
             paymentMethod={lastSale.paymentMethod}
             date={lastSale.date}
+            companyInfo={companySettings ? {
+              name: companySettings.name,
+              address: companySettings.address || '',
+              phone: companySettings.phone || '',
+              email: companySettings.email || undefined,
+              logo: companySettings.logo_url || undefined,
+            } : undefined}
           />
         )}
       </div>

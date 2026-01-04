@@ -20,6 +20,7 @@ import NotFound from "./pages/NotFound";
 import InventoryStock from "./pages/InventoryStock";
 import InventoryPOS from "./pages/InventoryPOS";
 import InventoryBarcode from "./pages/InventoryBarcode";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -86,7 +87,7 @@ const App = () => (
             <Route path="/email-templates" element={<DashboardPage><ComingSoon title="ইমেইল টেমপ্লেট" /></DashboardPage>} />
             <Route path="/reports" element={<DashboardPage><ComingSoon title="রিপোর্ট" /></DashboardPage>} />
             <Route path="/ai-assistant" element={<DashboardPage><ComingSoon title="AI সহায়তা" /></DashboardPage>} />
-            <Route path="/settings" element={<DashboardPage><ComingSoon title="সেটিংস" /></DashboardPage>} />
+            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/profile" element={<DashboardPage><Profile /></DashboardPage>} />
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
