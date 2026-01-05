@@ -44,8 +44,28 @@ import EmailTemplates from "./pages/EmailTemplates";
 
 const queryClient = new QueryClient();
 
+import { AppRole } from "@/hooks/useUserRole";
+
 const DashboardPage = ({ children }: { children: React.ReactNode }) => (
   <ProtectedRoute>
+    <DashboardLayout>{children}</DashboardLayout>
+  </ProtectedRoute>
+);
+
+const AdminPage = ({ children }: { children: React.ReactNode }) => (
+  <ProtectedRoute requiredRole="admin">
+    <DashboardLayout>{children}</DashboardLayout>
+  </ProtectedRoute>
+);
+
+const ManagerPage = ({ children }: { children: React.ReactNode }) => (
+  <ProtectedRoute allowedRoles={['admin', 'manager'] as AppRole[]}>
+    <DashboardLayout>{children}</DashboardLayout>
+  </ProtectedRoute>
+);
+
+const EmployeePage = ({ children }: { children: React.ReactNode }) => (
+  <ProtectedRoute allowedRoles={['admin', 'manager', 'employee'] as AppRole[]}>
     <DashboardLayout>{children}</DashboardLayout>
   </ProtectedRoute>
 );
@@ -61,45 +81,45 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/" element={<DashboardPage><Dashboard /></DashboardPage>} />
             
-            {/* CRM Routes */}
-            <Route path="/crm/leads" element={<DashboardPage><CRMLeads /></DashboardPage>} />
-            <Route path="/crm/clients" element={<DashboardPage><CRMClients /></DashboardPage>} />
-            <Route path="/crm/deals" element={<DashboardPage><CRMDeals /></DashboardPage>} />
-            <Route path="/crm/estimates" element={<DashboardPage><CRMEstimates /></DashboardPage>} />
+            {/* CRM Routes - Leads accessible to employees, others to managers */}
+            <Route path="/crm/leads" element={<EmployeePage><CRMLeads /></EmployeePage>} />
+            <Route path="/crm/clients" element={<ManagerPage><CRMClients /></ManagerPage>} />
+            <Route path="/crm/deals" element={<ManagerPage><CRMDeals /></ManagerPage>} />
+            <Route path="/crm/estimates" element={<ManagerPage><CRMEstimates /></ManagerPage>} />
             
-            {/* HRM Routes */}
-            <Route path="/hrm/employees" element={<DashboardPage><HRMEmployees /></DashboardPage>} />
-            <Route path="/hrm/attendance" element={<DashboardPage><HRMAttendance /></DashboardPage>} />
-            <Route path="/hrm/leave" element={<DashboardPage><HRMLeave /></DashboardPage>} />
-            <Route path="/hrm/payroll" element={<DashboardPage><HRMPayroll /></DashboardPage>} />
-            <Route path="/hrm/performance" element={<DashboardPage><HRMPerformance /></DashboardPage>} />
-            <Route path="/hrm/goals" element={<DashboardPage><HRMGoals /></DashboardPage>} />
+            {/* HRM Routes - Manager/Admin only */}
+            <Route path="/hrm/employees" element={<ManagerPage><HRMEmployees /></ManagerPage>} />
+            <Route path="/hrm/attendance" element={<EmployeePage><HRMAttendance /></EmployeePage>} />
+            <Route path="/hrm/leave" element={<EmployeePage><HRMLeave /></EmployeePage>} />
+            <Route path="/hrm/payroll" element={<ManagerPage><HRMPayroll /></ManagerPage>} />
+            <Route path="/hrm/performance" element={<ManagerPage><HRMPerformance /></ManagerPage>} />
+            <Route path="/hrm/goals" element={<EmployeePage><HRMGoals /></EmployeePage>} />
             
-            {/* Project Routes */}
-            <Route path="/projects" element={<DashboardPage><Projects /></DashboardPage>} />
-            <Route path="/projects/tasks" element={<DashboardPage><ProjectTasks /></DashboardPage>} />
-            <Route path="/projects/timesheet" element={<DashboardPage><ProjectTimesheet /></DashboardPage>} />
-            <Route path="/projects/budget" element={<DashboardPage><ProjectBudget /></DashboardPage>} />
+            {/* Project Routes - Employees and above */}
+            <Route path="/projects" element={<EmployeePage><Projects /></EmployeePage>} />
+            <Route path="/projects/tasks" element={<EmployeePage><ProjectTasks /></EmployeePage>} />
+            <Route path="/projects/timesheet" element={<EmployeePage><ProjectTimesheet /></EmployeePage>} />
+            <Route path="/projects/budget" element={<ManagerPage><ProjectBudget /></ManagerPage>} />
             
-            {/* Finance Routes */}
-            <Route path="/finance/invoices" element={<DashboardPage><FinanceInvoices /></DashboardPage>} />
-            <Route path="/finance/payments" element={<DashboardPage><FinancePayments /></DashboardPage>} />
-            <Route path="/finance/expenses" element={<DashboardPage><FinanceExpenses /></DashboardPage>} />
-            <Route path="/finance/accounting" element={<DashboardPage><FinanceAccounting /></DashboardPage>} />
-            <Route path="/finance/profit-loss" element={<DashboardPage><FinanceProfitLoss /></DashboardPage>} />
+            {/* Finance Routes - Manager/Admin only */}
+            <Route path="/finance/invoices" element={<ManagerPage><FinanceInvoices /></ManagerPage>} />
+            <Route path="/finance/payments" element={<ManagerPage><FinancePayments /></ManagerPage>} />
+            <Route path="/finance/expenses" element={<EmployeePage><FinanceExpenses /></EmployeePage>} />
+            <Route path="/finance/accounting" element={<ManagerPage><FinanceAccounting /></ManagerPage>} />
+            <Route path="/finance/profit-loss" element={<ManagerPage><FinanceProfitLoss /></ManagerPage>} />
             
-            {/* Inventory Routes */}
-            <Route path="/inventory/stock" element={<DashboardPage><InventoryStock /></DashboardPage>} />
-            <Route path="/inventory/pos" element={<DashboardPage><InventoryPOS /></DashboardPage>} />
-            <Route path="/inventory/barcode" element={<DashboardPage><InventoryBarcode /></DashboardPage>} />
+            {/* Inventory Routes - Employees and above for POS */}
+            <Route path="/inventory/stock" element={<EmployeePage><InventoryStock /></EmployeePage>} />
+            <Route path="/inventory/pos" element={<EmployeePage><InventoryPOS /></EmployeePage>} />
+            <Route path="/inventory/barcode" element={<EmployeePage><InventoryBarcode /></EmployeePage>} />
             
-            {/* Contract Routes */}
-            <Route path="/contracts" element={<DashboardPage><Contracts /></DashboardPage>} />
-            <Route path="/contracts/signature" element={<DashboardPage><DigitalSignature /></DashboardPage>} />
+            {/* Contract Routes - Manager/Admin only */}
+            <Route path="/contracts" element={<ManagerPage><Contracts /></ManagerPage>} />
+            <Route path="/contracts/signature" element={<ManagerPage><DigitalSignature /></ManagerPage>} />
             
-            {/* User Management */}
-            <Route path="/users" element={<DashboardPage><UserManagement /></DashboardPage>} />
-            <Route path="/roles" element={<DashboardPage><UserManagement /></DashboardPage>} />
+            {/* User Management - Admin only */}
+            <Route path="/users" element={<AdminPage><UserManagement /></AdminPage>} />
+            <Route path="/roles" element={<AdminPage><UserManagement /></AdminPage>} />
             
             {/* Other Routes */}
             <Route path="/chat" element={<DashboardPage><InternalChat /></DashboardPage>} />
