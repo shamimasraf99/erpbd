@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import {
   LayoutDashboard,
   Users,
@@ -44,6 +45,7 @@ interface MenuItem {
   label: string;
   href?: string;
   children?: { label: string; href: string }[];
+  requiredRole?: 'admin' | 'manager' | 'employee';
 }
 
 const menuItems: MenuItem[] = [
@@ -51,6 +53,7 @@ const menuItems: MenuItem[] = [
   {
     icon: Users,
     label: "ইউজার ম্যানেজমেন্ট",
+    requiredRole: 'admin',
     children: [
       { label: "সকল ইউজার", href: "/users" },
       { label: "রোল ও পারমিশন", href: "/roles" },
@@ -59,6 +62,7 @@ const menuItems: MenuItem[] = [
   {
     icon: UserCog,
     label: "HRM",
+    requiredRole: 'employee',
     children: [
       { label: "কর্মী তালিকা", href: "/hrm/employees" },
       { label: "উপস্থিতি", href: "/hrm/attendance" },
@@ -71,6 +75,7 @@ const menuItems: MenuItem[] = [
   {
     icon: Handshake,
     label: "CRM ও প্রি-সেল",
+    requiredRole: 'employee',
     children: [
       { label: "লিড", href: "/crm/leads" },
       { label: "ডিল", href: "/crm/deals" },
@@ -81,6 +86,7 @@ const menuItems: MenuItem[] = [
   {
     icon: FolderKanban,
     label: "প্রজেক্ট",
+    requiredRole: 'employee',
     children: [
       { label: "সকল প্রজেক্ট", href: "/projects" },
       { label: "টাস্ক", href: "/projects/tasks" },
@@ -91,6 +97,7 @@ const menuItems: MenuItem[] = [
   {
     icon: Calculator,
     label: "হিসাব ও ফাইন্যান্স",
+    requiredRole: 'employee',
     children: [
       { label: "ইনভয়েস", href: "/finance/invoices" },
       { label: "পেমেন্ট", href: "/finance/payments" },
@@ -102,6 +109,7 @@ const menuItems: MenuItem[] = [
   {
     icon: Package,
     label: "ইনভেন্টরি ও POS",
+    requiredRole: 'employee',
     children: [
       { label: "স্টক ম্যানেজমেন্ট", href: "/inventory/stock" },
       { label: "POS বিলিং", href: "/inventory/pos" },
@@ -111,6 +119,7 @@ const menuItems: MenuItem[] = [
   {
     icon: FileSignature,
     label: "কনট্রাক্ট",
+    requiredRole: 'manager',
     children: [
       { label: "সকল কনট্রাক্ট", href: "/contracts" },
       { label: "ডিজিটাল সিগনেচার", href: "/contracts/signature" },
@@ -118,7 +127,7 @@ const menuItems: MenuItem[] = [
   },
   { icon: MessageSquare, label: "ইন্টারনাল চ্যাট", href: "/chat" },
   { icon: Mail, label: "ইমেইল টেমপ্লেট", href: "/email-templates" },
-  { icon: PieChart, label: "রিপোর্ট", href: "/reports" },
+  { icon: PieChart, label: "রিপোর্ট", href: "/reports", requiredRole: 'manager' },
   { icon: Sparkles, label: "AI সহায়তা", href: "/ai-assistant" },
   { icon: UserCircle, label: "প্রোফাইল", href: "/profile" },
   { icon: Settings, label: "সেটিংস", href: "/settings" },
@@ -127,6 +136,7 @@ const menuItems: MenuItem[] = [
 export function Sidebar() {
   const location = useLocation();
   const { user } = useAuth();
+  const { role, isAdmin, isManager, isEmployee } = useUserRole();
   const [expandedItems, setExpandedItems] = useState<string[]>(["HRM", "CRM ও প্রি-সেল"]);
 
   const toggleExpand = (label: string) => {
@@ -140,6 +150,24 @@ export function Sidebar() {
     if (children) return children.some((child) => location.pathname === child.href);
     return false;
   };
+
+  // Filter menu items based on user role
+  const filteredMenuItems = useMemo(() => {
+    return menuItems.filter((item) => {
+      if (!item.requiredRole) return true;
+      
+      switch (item.requiredRole) {
+        case 'admin':
+          return isAdmin;
+        case 'manager':
+          return isAdmin || isManager;
+        case 'employee':
+          return isAdmin || isManager || isEmployee;
+        default:
+          return true;
+      }
+    });
+  }, [isAdmin, isManager, isEmployee]);
 
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-sidebar text-sidebar-foreground overflow-hidden flex flex-col"
@@ -158,7 +186,7 @@ export function Sidebar() {
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto scrollbar-thin px-3 py-4">
         <ul className="space-y-1">
-          {menuItems.map((item) => (
+          {filteredMenuItems.map((item) => (
             <li key={item.label}>
               {item.children ? (
                 <div>
